@@ -1,0 +1,20 @@
+{{- $portCfg := .Values.ports.cpanel -}}
+{{- if eq $portCfg.loadBalancerType "http" -}}
+{{- range $replica := until (.Values.statefulSet.replicas | int) -}}
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: {{ include "app.fullname" $ }}-cpanel-ing-{{ $replica }}
+  labels:
+    app: {{ include "app.name" $ }}
+    chart: {{ include "app.chart" $ }}
+    release: {{ $.Release.Name }}
+    heritage: {{ $.Release.Service }}
+spec:
+  backend:
+    serviceName: {{ include "app.fullname" $ }}-cpanel-svc-{{ $replica }}
+    servicePort: {{ $portCfg.servicePort }}
+...
+{{ end -}}
+{{- end -}}

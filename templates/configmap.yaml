@@ -1,0 +1,16 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "app.fullname" . }}-cfg
+  labels:
+    app: {{ include "app.name" . }}
+    chart: {{ include "app.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+data:
+  "factomd.conf": |-
+{{ include "factomd.conf" . | indent 4 }}
+
+  "factomd-api-proxy.conf": |-
+{{ include "factomd-api-proxy.conf" . | indent 4 }}

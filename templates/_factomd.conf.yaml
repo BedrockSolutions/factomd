@@ -1,0 +1,28 @@
+---
+{{- define "factomd.conf" -}}
+{{- $f := .Values.factomd -}}
+{{- $p := .Values.ports }}
+[app]
+; Ports
+PortNumber=1111
+ControlPanelPort=2222
+{{ eq $f.network "mainnet" | ternary "MainNetworkPort" "CustomNetworkPort" }}=3333
+
+{{ $mergedNames := merge (index $f._config.names $f.network) $f._config.names.global -}}
+{{- $mergedValues := merge $f.config (index $f._config.defaults $f.network) $f._config.defaults.global -}}
+{{- range $key, $configName := $mergedNames -}}
+{{- $value := (index $mergedValues $key) | default "" -}}
+{{- printf "; 'factomd.config.%s' --> %s" $key $configName }}
+{{ $comment := "" -}}
+{{- if not $value -}}
+{{- $comment = "; " -}}
+{{- else if not $f.isAuthority -}}
+{{- if eq $key "identityChainID" -}}
+{{- $value = include "factomd.configDefault" (dict "factomd" $f "key" "identityChainID") -}}
+{{- else if or (eq $key "localServerPrivateKey") (eq $key "localServerPublicKey") -}}
+{{- $comment = "; " -}}
+{{- end -}}
+{{- end -}}
+{{- printf "%s%s=%s\n" $comment $configName (toString $value) }}
+{{ end -}}
+{{- end -}}

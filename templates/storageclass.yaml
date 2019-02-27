@@ -1,0 +1,19 @@
+---
+kind: StorageClass
+apiVersion: storage.k8s.io/v1
+metadata:
+  name: {{ include "app.fullname" . }}-sc
+  labels:
+    app: {{ include "app.name" . }}
+    chart: {{ include "app.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+{{- if eq .Values.cloudProvider "gcp" }}
+provisioner: kubernetes.io/gce-pd
+parameters:
+  type: pd-{{ .Values.factomd.database.diskType }}
+{{- end }}
+allowVolumeExpansion: true
+volumeBindingMode: Immediate
+reclaimPolicy: Retain
+...

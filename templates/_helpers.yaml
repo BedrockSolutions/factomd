@@ -1,0 +1,105 @@
+---
+{{/* vim: set filetype=mustache: */}}
+
+{{/*
+  Expand the name of the chart.
+*/}}
+{{- define "app.name" -}}
+{{- default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
+
+{{/*
+  Create a default fully qualified app name.
+  We truncate at 63 chars because some Kubernetes name fields are limited
+  to this (by the DNS naming spec). If release name contains chart name
+  it will be used as a full name.
+*/}}
+{{- define "app.fullname" -}}
+{{- if .Values.fullnameOverride -}}
+{{- .Values.fullnameOverride | trunc 63 | trimSuffix "-" -}}
+{{- else -}}
+{{- $name := default .Chart.Name .Values.nameOverride -}}
+{{- if contains $name .Release.Name -}}
+{{- .Release.Name | trunc 63 | trimSuffix "-" -}}
+{{- else -}}
+{{- printf "%s-%s" .Release.Name $name | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+  Create chart name and version as used by the chart label.
+*/}}
+{{- define "app.chart" -}}
+{{- printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
+
+
+{{/*
+  Lookup the command argument name, given both the factomd object and the key
+*/}}
+{{- define "factomd.argKey" -}}
+{{- $key := .key -}}
+{{- with .factomd -}}
+{{- $global := ._args.names.global -}}
+{{- $network := index ._args.names .network -}}
+{{- $argName := index (merge $network $global) $key -}}
+{{- required (printf "No argument name was found for key '%s'" $key) $argName -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+  Lookup the argument value, given the factomd object and the key
+*/}}
+{{- define "factomd.argValue" -}}
+{{- $key := .key -}}
+{{- with .factomd -}}
+{{- $global := ._args.defaults.global -}}
+{{- $network := index ._args.defaults .network -}}
+{{- $argValue := index (merge .args $network $global) $key | default "" -}}
+{{- required (printf "No argument value was found for key '%s'" $key) $argValue -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+  Lookup the confguration file setting name, given both the factomd object and the key
+*/}}
+{{- define "factomd.configKey" -}}
+{{- $key := .key -}}
+{{- with .factomd -}}
+{{- $global := ._config.names.global -}}
+{{- $network := index ._config.names .network -}}
+{{- $configName := index (merge $network $global) $key -}}
+{{- required (printf "No configuration setting name was found for key '%s'" $key) $configName -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+  Lookup the confguration file setting value, given the factomd object and the key
+*/}}
+{{- define "factomd.configValue" -}}
+{{- $f := .factomd -}}
+{{- $key := .key -}}
+{{- $allowEmpty := default false .allowEmpty -}}
+{{- $global := $f._config.defaults.global -}}
+{{- $network := index $f._config.defaults $f.network -}}
+{{- $configValue := index (merge $f.config $network $global) $key | default "" -}}
+{{- if and (empty $configValue) (not $allowEmpty) -}}
+{{- fail (printf "No configuration setting value was found for key '%s'" $key) -}}
+{{- end -}}
+{{- $configValue -}}
+{{- end -}}
+
+{{/*
+  Lookup the confguration file setting default, given the factomd object and the key
+*/}}
+{{- define "factomd.configDefault" -}}
+{{- $key := .key -}}
+{{- with .factomd -}}
+{{- $global := ._config.defaults.global -}}
+{{- $network := index ._config.defaults .network -}}
+{{- $configValue := index (merge $network $global) $key -}}
+{{- required (printf "No configuration default was found for key '%s'" $key) $configValue -}}
+{{- end -}}
+{{- end -}}
+...

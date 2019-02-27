@@ -1,0 +1,189 @@
+# Set to the cloud provider. Currently, only 'gcp' is supported.
+cloudProvider: gcp
+
+# Factomd-specific configuration
+factomd:
+  # A dict of arguments passed to the factomd executable.
+  #
+  # Valid keys are:
+  #
+  #   customNet <-- testnet only
+  #   faultTimeout
+  #   startDelay
+  args: {}
+
+  # A dict of configuration file parameters.
+  #
+  # Valid keys are:
+  #
+  #   bootstrapIdentity <-- testnet only
+  #   bootstrapKey <-- testnet only
+  #   changeAcksHeight
+  #   controlPanelPortSetting
+  #   directoryBlockInSeconds
+  #   exchangeRateAuthorityPublicKey
+  #   identityChainID
+  #   localServerPublicKey
+  #   network
+  #   seedUrl
+  #   specialPeers
+  config: {}
+
+  # Database-related configuration
+  database:
+    # The size of the persistent disk resource
+    diskSize: 20Gi
+
+    # The type of the persistent disk. Value is 'standard' or 'ssd'
+    diskType: ssd
+
+  # Docker image
+  image: bedrocksolutions/factomd
+
+  # Docker image tag
+  imageTag: 0.1.1
+
+  # Enable if server is currently an authority server
+  isAuthority: false
+
+  # The Factom network to join. Either 'mainnet' or 'testnet'
+  network: mainnet
+
+  # Container resource limits and requests
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 4Gi
+    requests:
+      cpu: 500m
+      memory: 2Gi
+
+  # Private variable containing argument-related configuration.
+  # No touchy...
+  _args:
+    defaults:
+      global:
+        faultTimeout: 120
+        startDelay: 600
+      mainnet: {}
+      testnet:
+        customNet: fct_community_test
+
+    names:
+      global:
+        faultTimeout: faulttimeout
+        startDelay: startdelay
+      mainnet: {}
+      testnet:
+        customNet: customnet
+
+  # Private variable containing factomd.conf-related configuration.
+  # Hands off...
+  _config:
+    defaults:
+      global:
+        changeAcksHeight: 0
+        controlPanelSetting: readonly
+        identityChainID: FA1E000000000000000000000000000000000000000000000000000000000000
+        localServerPrivateKey: '${LOCAL_SERVER_PRIVATE_KEY}'
+      mainnet:
+        specialPeers: '"52.17.183.121:8108 52.17.153.126:8108 52.19.117.149:8108 52.18.72.212:8108"'
+        network: MAIN
+      testnet:
+        bootstrapIdentity: 8888882f5002ff95fce15d20ecb7e18ae6cc4d5849b372985d856b56e492ae0f
+        bootstrapKey: 58cfccaa48a101742845df3cecde6a9f38037030842d34d0eaa76867904705ae
+        directoryBlockInSeconds: 600
+        exchangeRateAuthorityPublicKey: 58cfccaa48a101742845df3cecde6a9f38037030842d34d0eaa76867904705ae
+        network: CUSTOM
+        seedUrl: https://raw.githubusercontent.com/FactomProject/communitytestnet/master/seeds/testnetseeds.txt
+
+    names:
+      global:
+        changeAcksHeight: ChangeAcksHeight
+        controlPanelSetting: ControlPanelSetting
+        directoryBlockInSeconds: DirectoryBlockInSeconds
+        exchangeRateAuthorityPublicKey: ExchangeRateAuthorityPublicKey
+        identityChainID: IdentityChainID
+        localServerPrivateKey: LocalServerPrivKey
+        localServerPublicKey: LocalServerPublicKey
+        network: Network
+      mainnet:
+        seedUrl: MainSeedURL
+        specialPeers: MainSpecialPeers
+      testnet:
+        bootstrapIdentity: CustomBootstrapIdentity
+        bootstrapKey: CustomBootstrapKey
+        seedUrl: CustomSeedURL
+        specialPeers: CustomSpecialPeers
+
+# Nginx API proxy configuration
+factomdApiProxy:
+
+  # Docker image
+  image: bedrocksolutions/factomd-api-proxy
+
+  # Docker image tag
+  imageTag: 0.4.0-rc2
+
+  # Container resource limits and requests
+  resources:
+    limits:
+      cpu: 50m
+      memory: 50Mi
+    requests:
+      cpu: 25m
+      memory: 25Mi
+
+# Port-related configuration
+ports:
+
+  api:
+    # Set to enable CORS on the API port. Possible values include:
+    #
+    # "": Empty string disables CORS
+    #
+    # "*": An asterisk enables CORS for any origin.
+    #
+    # "PERL-compatible regular expression": A regex used to test the client's 'Origin' header.
+    # A match will enable CORS for the matching origin.
+    #
+    #   Example: corsAllowOrigin: "^http://www.foo.com$"
+    #
+    corsAllowOrigin: ""
+
+    # Set the load balancer type. Allowed values are 'http', 'tcp', and 'none'
+    loadBalancerType: none
+
+    # Enable to create an internal load balancer
+    # Only works with "loadBalancerType: tcp"
+    isInternal: false
+
+    # The service listen port. Shouldn't need to change
+    servicePort: 80
+
+  cpanel:
+    # Set the load balancer type. Allowed values are 'http', 'tcp', and 'none'
+    loadBalancerType: none
+
+    # Enable to create an internal load balancer
+    # Only works with "loadBalancerType: tcp"
+    isInternal: false
+
+    # The service listen port. Shouldn't need to change
+    servicePort: 80
+
+
+# Prometheus to Stackdriver bridge configuration
+prometheusToSD:
+
+  # Container resource limits and requests
+  resources:
+    limits:
+      cpu: 50m
+      memory: 50Mi
+    requests:
+      cpu: 25m
+      memory: 25Mi
+
+statefulSet:
+  replicas: 1

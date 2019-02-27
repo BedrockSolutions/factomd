@@ -1,0 +1,12 @@
+---
+{{- define "factomd-api-proxy.conf" -}}
+{{- $f := .Values.factomd -}}
+{{- $p := .Values.ports -}}
+
+corsAllowOrigin: {{ $p.api.corsAllowOrigin | quote }}
+
+factomdUrl: http://localhost:1111
+
+listenPort: 1112
+
+{{- end -}}

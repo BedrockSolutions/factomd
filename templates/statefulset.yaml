@@ -1,0 +1,150 @@
+{{- $f := .Values.factomd }}
+{{- $p := .Values.ports }}
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "app.fullname" . }}-ss
+  labels:
+    app: {{ include "app.name" . }}
+    chart: {{ include "app.chart" . }}
+    heritage: {{ .Release.Service }}
+    release: {{ .Release.Name }}
+spec:
+  replicas: {{ .Values.statefulSet.replicas }}
+  selector:
+    matchLabels:
+      app: {{ include "app.name" . }}
+      release: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "app.name" . }}
+        chart: {{ include "app.chart" . }}
+        release: {{ .Release.Name }}
+    spec:
+      containers:
+      - name: factomd
+        args:
+{{- $merged := merge $f.args $f._args.defaults.global (index $f._args.defaults $f.network) }}
+{{- range $key, $value := $merged }}
+{{- if $value | kindOf | eq "invalid" | not }}
+{{- $argName := include "factomd.argKey" (dict "factomd" $f "key" $key) }}
+{{ printf "- \"-%s=%s\"" $argName (toString $value) | indent 8 }}
+{{- end }}
+{{- end }}
+{{- $publicKey := include "factomd.configValue" (dict "factomd" $f "key" "localServerPublicKey" "allowEmpty" true) -}}
+{{- if $publicKey }}
+        env:
+        - name: LOCAL_SERVER_PRIVATE_KEY
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Release.Name }}-secret
+              key: localServerPrivateKey
+{{- end }}
+        image: {{ .Values.factomd.image }}:{{ .Values.factomd.imageTag }}
+        imagePullPolicy: Always
+        livenessProbe:
+          tcpSocket:
+            port: 1111
+          initialDelaySeconds: 60
+          timeoutSeconds: 5
+        ports:
+        - name: api
+          containerPort: 1111
+          protocol: TCP
+        - name: cpanel
+          containerPort: 2222
+          protocol: TCP
+        - name: p2p
+          containerPort: 3333
+          protocol: TCP
+        - name: prometheus
+          containerPort: 9876
+          protocol: TCP
+        readinessProbe:
+          tcpSocket:
+            port: 1111
+          initialDelaySeconds: 15
+          timeoutSeconds: 5
+        resources:
+{{ toYaml .Values.factomd.resources | indent 10 }}
+        volumeMounts:
+        - name: factomd-config
+          mountPath: /home/factomd/.factom/private
+        - name: factomd-database
+          mountPath: /home/factomd/.factom/m2
+      - name: factomd-api-proxy
+        image: {{ .Values.factomdApiProxy.image }}:{{ .Values.factomdApiProxy.imageTag }}
+        imagePullPolicy: Always
+        livenessProbe:
+          tcpSocket:
+            port: 1112
+          initialDelaySeconds: 10
+          timeoutSeconds: 5
+        ports:
+        - name: api-proxy
+          containerPort: 1112
+          protocol: TCP
+        readinessProbe:
+          tcpSocket:
+            port: 1112
+          initialDelaySeconds: 5
+          timeoutSeconds: 5
+        resources:
+{{ toYaml .Values.factomdApiProxy.resources | indent 10 }}
+        volumeMounts:
+        - name: factomd-api-proxy-config
+          mountPath: /home/app/values/configmap
+{{- if eq .Values.cloudProvider "gcp" }}
+      - name: prometheus-to-sd
+        command:
+          - /monitor
+          - --stackdriver-prefix=custom.googleapis.com
+          - --source=factomd:http://localhost:9876
+          - --pod-id=$(POD_NAME)
+          - --namespace-id=$(POD_NAMESPACE)
+        env:
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        image: gcr.io/google-containers/prometheus-to-sd:v0.3.2
+        resources:
+{{ toYaml .Values.prometheusToSD.resources | indent 10 }}
+{{- end }}
+      securityContext:
+        fsGroup: 1000
+      volumes:
+      - name: factomd-config
+        configMap:
+          name: {{ include "app.fullname" . }}-cfg
+          items:
+          - key: factomd.conf
+            path: factomd.conf
+      - name: factomd-api-proxy-config
+        configMap:
+          name: {{ include "app.fullname" . }}-cfg
+          items:
+          - key: factomd-api-proxy.conf
+            path: values.yaml
+  volumeClaimTemplates:
+  - metadata:
+      name: factomd-database
+      labels:
+        app: {{ include "app.name" . }}
+        chart: {{ include "app.chart" . }}
+        heritage: {{ .Release.Service }}
+        release: {{ .Release.Name }}
+    spec:
+      accessModes:
+      - ReadWriteOnce
+      resources:
+        requests:
+          storage: {{ .Values.factomd.database.diskSize }}
+      storageClassName: {{ include "app.fullname" . }}-sc
+...

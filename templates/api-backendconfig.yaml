@@ -1,0 +1,16 @@
+{{- if eq .Values.ports.api.loadBalancerType "http" -}}
+---
+apiVersion: cloud.google.com/v1beta1
+kind: BackendConfig
+metadata:
+  name: {{ include "app.fullname" . }}-api-bec
+  labels:
+    app: {{ include "app.name" . }}
+    chart: {{ include "app.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  sessionAffinity:
+    affinityType: "CLIENT_IP"
+...
+{{- end -}}

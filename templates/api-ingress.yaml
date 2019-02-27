@@ -1,0 +1,18 @@
+{{- $portCfg := .Values.ports.api -}}
+{{- if eq $portCfg.loadBalancerType "http" -}}
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: {{ include "app.fullname" . }}-api-ing
+  labels:
+    app: {{ include "app.name" . }}
+    chart: {{ include "app.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  backend:
+    serviceName: {{ include "app.fullname" . }}-api-svc
+    servicePort: {{ $portCfg.servicePort }}
+...
+{{- end -}}

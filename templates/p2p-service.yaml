@@ -1,0 +1,23 @@
+{{- $f := .Values.factomd -}}
+{{- $portCfg := .Values.ports.p2p -}}
+{{- range $replica := until (.Values.statefulSet.replicas | int) -}}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "app.fullname" $ }}-p2p-svc-{{ $replica }}
+  labels:
+    app: {{ include "app.name" $ }}
+    chart: {{ include "app.chart" $ }}
+    release: {{ $.Release.Name }}
+    heritage: {{ $.Release.Service }}
+spec:
+  ports:
+  - port: {{ eq $f.network "mainnet" | ternary 8108 8110 }}
+    protocol: TCP
+    targetPort: p2p
+  selector:
+    "statefulset.kubernetes.io/pod-name": {{ include "app.fullname" $ }}-ss-{{ $replica }}
+  type: LoadBalancer
+...
+{{ end -}}

@@ -1,0 +1,13 @@
+---
+apiVersion: v1
+description: Helm chart for the Factom daemon
+home: https://github.com/FactomProject/factomd
+maintainers:
+  - name: Bedrock Solutions
+    email: info@bedrocksolutions.io
+name: factomd
+sources:
+  - https://github.com/BedrockSolutions/helm/tree/master/factomd
+  - https://github.com/BedrockSolutions/dockerfile/tree/master/factomd
+  - https://github.com/FactomProject/factomd
+version: 0.1.1

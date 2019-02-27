@@ -1,0 +1,33 @@
+{{- $portCfg := .Values.ports.cpanel -}}
+{{- range $replica := until (.Values.statefulSet.replicas | int) -}}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "app.fullname" $ }}-cpanel-svc-{{ $replica }}
+  annotations:
+    placeholder: Unused
+{{- if and (eq $.Values.cloudProvider "gcp") (eq $portCfg.loadBalancerType "tcp") $portCfg.isInternal }}
+    "cloud.google.com/load-balancer-type": Internal
+{{- end }}
+  labels:
+    app: {{ include "app.name" $ }}
+    chart: {{ include "app.chart" $ }}
+    release: {{ $.Release.Name }}
+    heritage: {{ $.Release.Service }}
+spec:
+  ports:
+  - port: {{ $portCfg.servicePort }}
+    protocol: TCP
+    targetPort: cpanel
+  selector:
+    "statefulset.kubernetes.io/pod-name": {{ include "app.fullname" $ }}-ss-{{ $replica }}
+{{- if eq $portCfg.loadBalancerType "tcp" }}
+  type: LoadBalancer
+{{- else if eq $portCfg.loadBalancerType "http" }}
+  type: NodePort
+{{- else }}
+  type: ClusterIP
+{{- end }}
+...
+{{ end -}}

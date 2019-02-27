@@ -1,0 +1,37 @@
+{{- $portCfg := .Values.ports.api -}}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "app.fullname" . }}-api-svc
+  annotations:
+    placeholder: Unused
+{{- if and (eq .Values.cloudProvider "gcp") (eq $portCfg.loadBalancerType "http") }}
+    beta.cloud.google.com/backend-config: '{"ports": {"api":"{{ include "app.fullname" . }}-api-bec"}}'
+{{- end }}
+{{- if and (eq .Values.cloudProvider "gcp") (eq $portCfg.loadBalancerType "tcp") $portCfg.isInternal }}
+    "cloud.google.com/load-balancer-type": Internal
+{{- end }}
+  labels:
+    app: {{ include "app.name" . }}
+    chart: {{ include "app.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  ports:
+  - name: api
+    port: {{ $portCfg.servicePort }}
+    protocol: TCP
+    targetPort: api-proxy
+  selector:
+    app: {{ include "app.name" . }}
+    release: {{ .Release.Name }}
+{{- if eq $portCfg.loadBalancerType "tcp" }}
+  sessionAffinity: ClientIP
+  type: LoadBalancer
+{{- else if eq $portCfg.loadBalancerType "http" }}
+  type: NodePort
+{{- else }}
+  type: ClusterIP
+{{- end }}
+...
