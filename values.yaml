@@ -51,9 +51,9 @@ factomd:
 
   # Container resource limits and requests
   resources:
-    limits:
-      cpu: 1000m
-      memory: 4Gi
+    # limits:
+    #   cpu: 1000m
+    #   memory: 4Gi
     requests:
       cpu: 500m
       memory: 2Gi
@@ -123,7 +123,7 @@ factomdApiProxy:
   image: bedrocksolutions/factomd-api-proxy
 
   # Docker image tag
-  imageTag: 0.4.0-rc2
+  imageTag: 0.5.0-rc1
 
   # Container resource limits and requests
   resources:
